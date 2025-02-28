@@ -56,14 +56,14 @@ public class CopyAuto2Specimen extends LinearOpMode {
         Vertical = hardwareMap.get(DcMotor.class, "Vertical");
 
         VerRotate = hardwareMap.get(Servo.class, "Vertical Rotate");
-        VerRotate.setPosition(0.85);
+        VerRotate.setPosition(0.19);
         VerClaw = hardwareMap.get(Servo.class, "Vertical Claw");
-        VerClaw.setPosition(0.5);
+        VerClaw.setPosition(0.32);
 
         HorRotate = hardwareMap.get(Servo.class, "Horizontal Rotate");
-        HorRotate.setPosition(0.45);
+        HorRotate.setPosition(0.4);
         HorClaw = hardwareMap.get(Servo.class, "Horizontal Claw");
-        HorClaw.setPosition(0.2);
+        HorClaw.setPosition(0.23);
         RevHubOrientationOnRobot.LogoFacingDirection logoDirection =
                 RevHubOrientationOnRobot.LogoFacingDirection.RIGHT;
 
@@ -108,69 +108,88 @@ public class CopyAuto2Specimen extends LinearOpMode {
 
         waitForStart();
 
-        telemetry.addData("Vertical", Vertical.getCurrentPosition());
-        telemetry.update();
 
-        VerSliderPosition(-1500, -0.9);//to prepare
 
-        driveStraight(0.6, 45);//move to the chamber
-        driveStraight(0.2, 5);//accurately
 
-        VerSliderPosition(-2450, -0.9);//place the specimen
 
-        VerClaw.setPosition(0.1);//to open
-        sleep(500);
-        VerClaw.setPosition(0.5);//to close
-        sleep(500);
-        VerRotate.setPosition(0.15);//rotate to take from the wall
-        VerSliderZero(0.9);
-        VerClaw.setPosition(0.1);//to open
+        // create a thread for first movement
 
-        driveStraight(-0.6, 30);//go to the wall
-        driveSide(0.6, 75);//go to observation
-        driveStraight(-0.3, 7);
 
-        VerClaw.setPosition(0.5);//to close
 
-        driveStraight(0.2, 10);
 
-        VerRotate.setPosition(0.85);//rotate to the chamber
 
-        driveSide(-0.6, 60);
+        // start both threads
+        Thread sliderMiddle1 = new Thread(() -> VerSliderPosition(-1500, -0.9));
+        Thread driveFirst = new Thread(() -> driveStraight(-0.6, 52));
 
-        VerSliderPosition(-1500, -0.9);//prepare
+        sliderMiddle1.start();
+        driveFirst.start();
 
-        driveStraight(0.6, 37);
-
-        driveStraight(0.3, 5);//go to the chamber
-
-        VerSliderPosition(-2450, -0.9);//place the specimen
-
-        VerClaw.setPosition(0.1);//to open
-
-        driveDiagonal(0.6, 100);//go to the parking
-        driveSide(0.6, 40);
-
-    }
-    public void driveRotate(double rotateSpeed, double angle)
-    {
-        imu.resetYaw();
-
-        while (opModeIsActive() && Math.abs(getHeading()) < angle) {
-
-            telemetry.addData("Currently at:", "%4.0f", getHeading());
-            telemetry.update();
-
-            LeftFront.setPower(-rotateSpeed);
-            LeftBack.setPower(-rotateSpeed);
-            RightFront.setPower(rotateSpeed);
-            RightBack.setPower(rotateSpeed);
+        // waiting for finishing both of threads
+        try {
+            sliderMiddle1.join();
+            driveFirst.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
-        LeftFront.setPower(0);
-        LeftBack.setPower(0);
-        RightFront.setPower(0);
-        RightBack.setPower(0);
-        sleep(300);
+
+        VerSliderPosition(-2600, -0.9);//place specimen 1
+
+        VerClaw.setPosition(0.1);//to open
+        sleep(500);
+        VerClaw.setPosition(0.32);//to close
+        sleep(500);
+        VerRotate.setPosition(0.89);//rotate to take from the wall
+        sleep(500);
+        VerClaw.setPosition(0.1);//to open
+
+        Thread sliderZero = new Thread(() -> VerSliderZero(0.9));
+        Thread driveSecond = new Thread(() -> {
+            driveStraight(0.6, 30);//go to the wall
+            driveSide(-0.6, 75);//go to observation
+            driveStraight(0.3, 7);
+        });
+
+        driveSecond.start();
+        sliderZero.start();
+        try {
+            driveSecond.join();
+            sliderZero.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+
+        VerClaw.setPosition(0.32);//to close
+
+        sleep(500);
+        VerRotate.setPosition(0.81);//to close
+        Thread sliderMiddle2 = new Thread(() -> VerSliderPosition(-1500, -0.9));
+        Thread driveThird = new Thread(() -> {
+            driveStraight(-0.2, 10);
+            driveSide(0.6, 60);
+            driveStraight(-0.6, 37);
+            driveStraight(-0.3, 5);
+        });
+
+        driveThird.start();
+        sliderMiddle2.start();
+
+        try {
+            driveThird.join();
+            sliderMiddle2.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+
+        VerSliderPosition(-2600, -0.9);//place the specimen
+
+        VerClaw.setPosition(0.1);//to open
+
+        driveDiagonal(-0.6, 100);//go to the parking
+        driveSide(-0.6, 40);
+
     }
     public void driveStraight(double driveSpeed, double distance)
     {
@@ -282,6 +301,8 @@ public class CopyAuto2Specimen extends LinearOpMode {
         // Stop the vertical motor once the sensor is pressed
         Vertical.setPower(0);
     }
+
+
     public double getHeading()
     {
         YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
