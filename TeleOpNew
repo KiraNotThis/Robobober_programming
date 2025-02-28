@@ -27,6 +27,8 @@ public class TeleOpNew extends LinearOpMode {
     boolean xBefore = false;
     boolean yBefore = false;
     boolean b1Before = false;
+    boolean lbBefore = false; //changing speed
+    boolean rbBefore = false;//changing direction    
     double x = 0.7;
     double speed = 0.7;
     TouchSensor touchSensor;
@@ -91,11 +93,14 @@ public class TeleOpNew extends LinearOpMode {
 
             Horizontal.setPower(horizontal * x);
 
-            if(gamepad1.left_bumper){//change direction of the robot
+            if(gamepad1.right_bumper && !rbBefore){//change direction of the robot
+                rbBefore = true;
                 speed = -speed;
             }
+            rbBefore = gamepad1.right_bumper;
 
-            if(gamepad1.right_bumper){//change speed of the robot
+            if(gamepad1.left_bumper && !lbBefore){//change speed of the robot
+                lbBefore = true;
                 if (speed == 0.3){
                     speed = 0.7;
                 }
@@ -103,6 +108,7 @@ public class TeleOpNew extends LinearOpMode {
                     speed = 0.3;
                 }
             }
+            lbBefore = gamepad1.left_bumper;
 
 
             if (gamepad1.b && !b1Before){
