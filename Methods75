@@ -62,14 +62,14 @@ public class Methods75 extends LinearOpMode {
         Horizontal = hardwareMap.get(DcMotor.class, "Horizontal");
 
         VerRotate = hardwareMap.get(Servo.class, "Vertical Rotate");
-        VerRotate.setPosition(0.15);
+        VerRotate.setPosition(0.19);
         VerClaw = hardwareMap.get(Servo.class, "Vertical Claw");
-        VerClaw.setPosition(0.5);
+        VerClaw.setPosition(0.32);
 
         HorRotate = hardwareMap.get(Servo.class, "Horizontal Rotate");
-        HorRotate.setPosition(0.45);
+        HorRotate.setPosition(0.4);
         HorClaw = hardwareMap.get(Servo.class, "Horizontal Claw");
-        HorClaw.setPosition(0.2);
+        HorClaw.setPosition(0.23);
         RevHubOrientationOnRobot.LogoFacingDirection logoDirection =
                 RevHubOrientationOnRobot.LogoFacingDirection.RIGHT;
 
