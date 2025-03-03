@@ -27,22 +27,20 @@ public class 3SpecimenAll extends LinearOpMode {
     private Servo VerClaw;
     private Servo HorRotate;
     private Servo HorClaw;
-    static final double FORWARD = 0.6;
-    static final double ROTATE = 0.2;
     static final double WHEEL_DIAMETER = 10.4;
     static final double PULSES = 537.7;
     static final double PI = 3.1415;
     static final double PULSES_PER_CM = PULSES/(WHEEL_DIAMETER*PI);
-    TouchSensor touchSensor;
-    TouchSensor touchSensorHor;
+    TouchSensor touchVertical;
+    TouchSensor touchHorizontal;
 
 
 
 
     @Override
     public void runOpMode() {
-        touchSensor = hardwareMap.get(TouchSensor.class, "sensor_touch");//in configuration change the name
-        touchSensorHor = hardwareMap.get(TouchSensor.class, "sensor_touch_hor");
+        touchVertical = hardwareMap.get(TouchSensor.class, "sensor_touch");//in configuration change the name
+        touchHorizontal = hardwareMap.get(TouchSensor.class, "sensor_touch_hor");
 
         LeftFront = hardwareMap.get(DcMotor.class, "left_front");
         LeftBack = hardwareMap.get(DcMotor.class, "left_back");
@@ -109,7 +107,7 @@ public class 3SpecimenAll extends LinearOpMode {
         waitForStart();
 
         //GO TO THE CHAMBER 1
-        Thread sliderMiddle1 = new Thread(() -> VerSliderPosition(-1500, -0.9));
+        Thread sliderMiddle1 = new Thread(() -> verticalUp(-1500, -0.9));
         Thread driveFirst = new Thread(() -> driveStraight(1, 76.8);
 
         sliderMiddle1.start();
@@ -123,11 +121,11 @@ public class 3SpecimenAll extends LinearOpMode {
         }
 
         //PLACE 1st SPECIMEN
-        VerSliderPosition(-2600, -0.9);//place specimen 1
+        verticalUp(-2600, -0.9);//place specimen 1
         VerClaw.setPosition(0.1);//to open
 
         //GO FOR THE SAMPLE
-        Thread sliderZero1 = new Thread(() -> VerSliderZero(0.9);
+        Thread sliderZero1 = new Thread(() -> verticalZero(0.9);
         Thread driveSecond = new Thread(() -> {
             driveStraight(-1, 6);//Drive back
             driveSide(1, 128.4);//Drive sideways for the sample
@@ -147,11 +145,11 @@ public class 3SpecimenAll extends LinearOpMode {
         HorRotate.setPosition(1);//rotate to the sample
         sleep(500);
         HorClaw.setPosition(0);//open horizontal claw
-        HorSliderPosition(-0.9, -500);//put slider to the sample
+        horizontalForward(-0.9, -500);//put slider to the sample
         HorClaw.setPosition(0.23);//close claw
         sleep(500);
         HorRotate.setPosition(0.55);//rotate to vertical claw
-        HorSliderZero(-0.9);//put slider in zero position
+        horizontalZero(-0.9);//put slider in zero position
         VerClaw.setPosition(0.32);// close VerClaw
         sleep(500);
         HorClaw.setPosition(0);//open horizontal claw
@@ -170,7 +168,7 @@ public class 3SpecimenAll extends LinearOpMode {
         VerRotate.setPosition(0.19);//rotate to chamber
 
         //GO TO THE CHAMBER 2
-        Thread sliderMiddle2 = new Thread(() -> VerSliderPosition(-0.9, -1500);
+        Thread sliderMiddle2 = new Thread(() -> verticalUp(-0.9, -1500);
         Thread driveThird = new Thread(() -> {
             driveDiagonal(1, 96.7);//Drive diagonal to the chamber
             driveStraight(1, 13.2);//Drive straight
@@ -187,7 +185,7 @@ public class 3SpecimenAll extends LinearOpMode {
         }
 
         //PLACE 2nd SPECIMEN
-        VerSliderPosition(-2600, -0.9);//place specimen 1
+        verticalUp(-2600, -0.9);//place specimen 1
         VerClaw.setPosition(0.1);//to open
         sleep(500);
         VerClaw.setPosition(0.32);//to close
@@ -197,7 +195,7 @@ public class 3SpecimenAll extends LinearOpMode {
         VerClaw.setPosition(0.1);//to open
 
         //GO TO OBSERVATION 2nd
-        Thread sliderZero2 = new Thread(() -> VerSliderZero(0.9);
+        Thread sliderZero2 = new Thread(() -> verticalZero(0.9);
         Thread driveFourth = new Thread(() -> {
             driveDiagonal(-1, 98.9);//Drive diagonal to the observation
             driveStraight(-1, 11.6);//Drive backwards
@@ -219,7 +217,7 @@ public class 3SpecimenAll extends LinearOpMode {
         VerRotate.setPosition(0.19);//rotate to chamber
 
         //GO TO THE CHAMBER 3
-        Thread sliderMiddle3 = new Thread(() -> VerSliderPosition(-0.9, -1500);
+        Thread sliderMiddle3 = new Thread(() -> verticalUp(-0.9, -1500);
         Thread driveFifth = new Thread(() -> {
             driveDiagonal(1, 98.9);//Drive diagonal to the chamber
             driveStraight(1, 11.6);//Drive straight
@@ -236,7 +234,7 @@ public class 3SpecimenAll extends LinearOpMode {
         }
 
         //PLACE 3rd SPECIMEN
-        VerSliderPosition(-2600, -0.9);//place specimen 1
+        verticalUp(-2600, -0.9);//place specimen 1
         VerClaw.setPosition(0.1);//to open
 
         //GO PARKING
@@ -271,13 +269,11 @@ public class 3SpecimenAll extends LinearOpMode {
     //______________________________*Straight_________________________________//
 
     public void driveStraight(double driveSpeed, double distance) {
-        // Сбрасываем энкодеры перед началом движения
         LeftFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         LeftBack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         RightFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         RightBack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
-        // Включаем режим использования энкодеров
         LeftFront.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         LeftBack.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         RightFront.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -285,14 +281,14 @@ public class 3SpecimenAll extends LinearOpMode {
 
         int targetTicks = (int) (PULSES_PER_CM * distance);
 
-        // Начинаем замедляться на 70% пути
+        // Starting to slow down 70% of the way
         double slowdownStart = targetTicks * 0.7;
 
         while (opModeIsActive() && Math.abs(LeftFront.getCurrentPosition()) < targetTicks) {
             int currentTicks = Math.abs(LeftFront.getCurrentPosition());
             double slowdownFactor = 1.0;
 
-            // Плавное торможение, если робот проходит 70% расстояния
+            // Smooth braking if the robot travels 70% of the distance
             if (currentTicks > slowdownStart) {
                 slowdownFactor = Math.max(0.2, 1.0 - ((currentTicks - slowdownStart) / (targetTicks - slowdownStart)));
             }
@@ -309,16 +305,13 @@ public class 3SpecimenAll extends LinearOpMode {
             RightBack.setPower(adjustedSpeed);
         }
 
-        // Останавливаем моторы, но не ставим жесткий 0, чтобы сохранить накатывание
         LeftFront.setPower(0.05);
         LeftBack.setPower(0.05);
         RightFront.setPower(0.05);
         RightBack.setPower(0.05);
 
-        // Небольшая задержка для завершения движения по инерции
         sleep(200);
 
-        // Полностью отключаем моторы
         LeftFront.setPower(0);
         LeftBack.setPower(0);
         RightFront.setPower(0);
@@ -330,13 +323,11 @@ public class 3SpecimenAll extends LinearOpMode {
     //______________________________*Side_____________________________________//
 
     public void driveSide(double driveSpeed, double distance) {
-        // Сбрасываем энкодеры перед началом движения
         LeftFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         LeftBack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         RightFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         RightBack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
-        // Включаем режим использования энкодеров
         LeftFront.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         LeftBack.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         RightFront.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -344,14 +335,12 @@ public class 3SpecimenAll extends LinearOpMode {
 
         int targetTicks = (int) (PULSES_PER_CM * distance);
 
-        // Начинаем замедляться после прохождения 70% пути
         double slowdownStart = targetTicks * 0.7;
 
         while (opModeIsActive() && Math.abs(LeftFront.getCurrentPosition()) < targetTicks) {
             int currentTicks = Math.abs(LeftFront.getCurrentPosition());
             double slowdownFactor = 1.0;
 
-            // Плавное торможение, если робот проходит 70% расстояния
             if (currentTicks > slowdownStart) {
                 slowdownFactor = Math.max(0.2, 1.0 - ((currentTicks - slowdownStart) / (targetTicks - slowdownStart)));
             }
@@ -362,23 +351,19 @@ public class 3SpecimenAll extends LinearOpMode {
             telemetry.addData("Speed Factor", "%.2f", slowdownFactor);
             telemetry.update();
 
-            // Боковое движение с учетом замедления
             LeftFront.setPower(adjustedSpeed);
             LeftBack.setPower(-adjustedSpeed);
             RightFront.setPower(-adjustedSpeed);
             RightBack.setPower(adjustedSpeed);
         }
 
-        // Оставляем небольшой накат перед полной остановкой
         LeftFront.setPower(0.05);
         LeftBack.setPower(-0.05);
         RightFront.setPower(-0.05);
         RightBack.setPower(0.05);
 
-        // Короткая пауза для естественного торможения
         sleep(200);
 
-        // Полностью отключаем моторы
         LeftFront.setPower(0);
         LeftBack.setPower(0);
         RightFront.setPower(0);
@@ -390,13 +375,11 @@ public class 3SpecimenAll extends LinearOpMode {
     //___________________________*Diagonal____________________________________//
 
     public void driveDiagonal(double driveSpeed, double distance) {
-        // Сбрасываем энкодеры перед началом движения
         LeftFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         LeftBack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         RightFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         RightBack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
-        // Включаем режим использования энкодеров
         LeftFront.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         LeftBack.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         RightFront.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -404,14 +387,12 @@ public class 3SpecimenAll extends LinearOpMode {
 
         int targetTicks = (int) (PULSES_PER_CM * distance);
 
-        // Начинаем замедляться после прохождения 70% пути
         double slowdownStart = targetTicks * 0.7;
 
         while (opModeIsActive() && Math.abs(RightFront.getCurrentPosition()) < targetTicks) {
             int currentTicks = Math.abs(RightFront.getCurrentPosition());
             double slowdownFactor = 1.0;
 
-            // Плавное торможение, если робот проходит 70% расстояния
             if (currentTicks > slowdownStart) {
                 slowdownFactor = Math.max(0.2, 1.0 - ((currentTicks - slowdownStart) / (targetTicks - slowdownStart)));
             }
@@ -422,21 +403,17 @@ public class 3SpecimenAll extends LinearOpMode {
             telemetry.addData("Speed Factor", "%.2f", slowdownFactor);
             telemetry.update();
 
-            // Диагональное движение с учетом замедления
             LeftFront.setPower(0);
             LeftBack.setPower(-adjustedSpeed);
             RightFront.setPower(-adjustedSpeed);
             RightBack.setPower(0);
         }
 
-        // Оставляем небольшой накат перед полной остановкой
         LeftBack.setPower(-0.05);
         RightFront.setPower(-0.05);
 
-        // Короткая пауза для естественного торможения
         sleep(200);
 
-        // Полностью отключаем моторы
         LeftFront.setPower(0);
         LeftBack.setPower(0);
         RightFront.setPower(0);
@@ -444,15 +421,18 @@ public class 3SpecimenAll extends LinearOpMode {
     }
     //___________________________Diagonal*____________________________________//
 
-    public void VerSliderPosition(double position, double power){
+    //___________________________VerticalPosition*____________________________//
+    public void verticalUp(double position, double power){
         Vertical.setTargetPosition((int) position);
         Vertical.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         Vertical.setPower(power);
     }
+    //___________________________VerticalPosition*____________________________//
 
-    public void VerSliderZero(double power){
+    //___________________________VerticalZero*________________________________//
+    public void verticalZero(double power){
 
-        while (opModeIsActive() && !touchSensor.isPressed()) {
+        while (opModeIsActive() && !touchVertical.isPressed()) {
             Vertical.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             Vertical.setPower(power);  // Keep moving down
         }
@@ -460,16 +440,20 @@ public class 3SpecimenAll extends LinearOpMode {
         // Stop the vertical motor once the sensor is pressed
         Vertical.setPower(0);
     }
+    //___________________________VerticalZero*_______________________________//
 
-    public void HorSliderPosition(double position, double power){
+    //___________________________HorizontalPosition*____________________________//
+    public void horizontalForward(double position, double power){
         Horizontal.setTargetPosition((int) position);
         Horizontal.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         Horizontal.setPower(power);
     }
+    //___________________________HorizontalPosition*____________________________//
 
-    public void HorSliderZero(double power){
+    //___________________________HorizontalZero*____________________________//
+    public void horizontalZero(double power){
 
-        while (opModeIsActive() && !touchSensorHor.isPressed()) {
+        while (opModeIsActive() && !touchHorizontal.isPressed()) {
             Horizontal.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             Horizontal.setPower(power);  // Keep moving down
         }
@@ -477,6 +461,7 @@ public class 3SpecimenAll extends LinearOpMode {
         // Stop the vertical motor once the sensor is pressed
         Horizontal.setPower(0);
     }
+    //___________________________HorizontalalZero*____________________________//
 
     public double getHeading()
     {
