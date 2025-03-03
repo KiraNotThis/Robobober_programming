@@ -82,10 +82,10 @@ public class Methods80 extends LinearOpMode {
         imu = hardwareMap.get(IMU.class, "imu");
         imu.initialize(new IMU.Parameters(orientationOnRobot));
 
-        LeftFront.setDirection(DcMotor.Direction.REVERSE);
-        LeftBack.setDirection(DcMotor.Direction.REVERSE);
-        RightFront.setDirection(DcMotor.Direction.FORWARD);
-        RightBack.setDirection(DcMotor.Direction.FORWARD);
+        LeftFront.setDirection(DcMotor.Direction.FORWARD);
+        LeftBack.setDirection(DcMotor.Direction.FORWARD);
+        RightFront.setDirection(DcMotor.Direction.REVERSE);
+        RightBack.setDirection(DcMotor.Direction.REVERSE);
 
         Vertical.setDirection(DcMotor.Direction.FORWARD);
         Horizontal.setDirection(DcMotor.Direction.FORWARD);
