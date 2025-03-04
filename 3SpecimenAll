@@ -13,7 +13,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 
 @Autonomous(name="3 Specimen All", group="Robot")
-public class 3SpecimenAll extends LinearOpMode {
+public class Specimen3All extends LinearOpMode {
     private DcMotor LeftFront = null;
     private DcMotor LeftBack = null;
     private DcMotor RightFront = null;
@@ -58,7 +58,7 @@ public class 3SpecimenAll extends LinearOpMode {
         HorRotate = hardwareMap.get(Servo.class, "Horizontal Rotate");
         HorRotate.setPosition(0.4);
         HorClaw = hardwareMap.get(Servo.class, "Horizontal Claw");
-        HorClaw.setPosition(0.23);
+        HorClaw.setPosition(0.05);
         RevHubOrientationOnRobot.LogoFacingDirection logoDirection =
                 RevHubOrientationOnRobot.LogoFacingDirection.RIGHT;
 
@@ -108,7 +108,10 @@ public class 3SpecimenAll extends LinearOpMode {
 
         //GO TO THE CHAMBER 1
         Thread sliderMiddle1 = new Thread(() -> verticalUp(-1500, -0.9));
-        Thread driveFirst = new Thread(() -> driveStraight(1, 76.8);
+        Thread driveFirst = new Thread(() -> {
+            driveStraight(1, 63);//Drive back
+            driveStraight(0.3, 5);
+        });
 
         sliderMiddle1.start();
         driveFirst.start();
@@ -120,15 +123,17 @@ public class 3SpecimenAll extends LinearOpMode {
             e.printStackTrace();
         }
 
+
         //PLACE 1st SPECIMEN
         verticalUp(-2600, -0.9);//place specimen 1
         VerClaw.setPosition(0.1);//to open
 
         //GO FOR THE SAMPLE
-        Thread sliderZero1 = new Thread(() -> verticalZero(0.9);
+        Thread sliderZero1 = new Thread(() -> verticalZero(0.9));
         Thread driveSecond = new Thread(() -> {
-            driveStraight(-1, 6);//Drive back
-            driveSide(1, 128.4);//Drive sideways for the sample
+            driveStraight(-0.3, 20);//Drive back
+            sleep(50);
+            driveSide(1, 120);
         });
 
         sliderZero1.start();
@@ -143,24 +148,26 @@ public class 3SpecimenAll extends LinearOpMode {
 
         //TAKE SAMPLE AND PUT IN OBSERVATION
         HorRotate.setPosition(1);//rotate to the sample
+        //HorClaw.setPosition(0);//open horizontal claw
+        //horizontalForward(-0.9, -500);//put slider to the sample
         sleep(500);
-        HorClaw.setPosition(0);//open horizontal claw
-        horizontalForward(-0.9, -500);//put slider to the sample
         HorClaw.setPosition(0.23);//close claw
         sleep(500);
         HorRotate.setPosition(0.55);//rotate to vertical claw
-        horizontalZero(-0.9);//put slider in zero position
+        //horizontalZero(-0.9);//put slider in zero position
+        sleep(500);
         VerClaw.setPosition(0.32);// close VerClaw
         sleep(500);
         HorClaw.setPosition(0);//open horizontal claw
         sleep(500);
         VerRotate.setPosition(0.81);//rotate to observation
         sleep(500);
-        VerClaw(0.1);//open claw
+        VerClaw.setPosition(0.1);//open claw
 
         //GO TO OBSERVATION
-        driveSide(-1, 30);//Drive sideways
-        driveStraight(-1, 70.8);//Drive backwards
+        driveSide(-1, 20);//Drive sideways
+        driveStraight(-1, 50);//Drive backwards
+        driveStraight(-0.23, 17);//Drive backwards for the sample.
 
         //TAKE SPECIMEN FROM OBSERVATION 1st
         VerClaw.setPosition(0.32);// close VerClaw
@@ -168,10 +175,12 @@ public class 3SpecimenAll extends LinearOpMode {
         VerRotate.setPosition(0.19);//rotate to chamber
 
         //GO TO THE CHAMBER 2
-        Thread sliderMiddle2 = new Thread(() -> verticalUp(-0.9, -1500);
+        Thread sliderMiddle2 = new Thread(() -> verticalUp(-1500, -0.9));
         Thread driveThird = new Thread(() -> {
-            driveDiagonal(1, 96.7);//Drive diagonal to the chamber
-            driveStraight(1, 13.2);//Drive straight
+            driveStraight(1, 7);
+            driveSide(-1, 110);
+            driveStraight(1, 47);
+            driveStraight(0.3, 7);
         });
 
         sliderMiddle2.start();
@@ -195,10 +204,11 @@ public class 3SpecimenAll extends LinearOpMode {
         VerClaw.setPosition(0.1);//to open
 
         //GO TO OBSERVATION 2nd
-        Thread sliderZero2 = new Thread(() -> verticalZero(0.9);
+        Thread sliderZero2 = new Thread(() -> verticalZero(0.9));
         Thread driveFourth = new Thread(() -> {
-            driveDiagonal(-1, 98.9);//Drive diagonal to the observation
-            driveStraight(-1, 11.6);//Drive backwards
+            driveStraight(-1, 50);
+            driveSide(1, 100);
+            driveStraight(-0.3, 25);
         });
 
         sliderZero2.start();
@@ -211,16 +221,18 @@ public class 3SpecimenAll extends LinearOpMode {
             e.printStackTrace();
         }
 
-        //TAKE SPECIMEN FROM OBSERVATION 2nd
+        //TAKE SPECIMEN FROM OBSERVATION 3rd
         VerClaw.setPosition(0.32);// close VerClaw
         sleep(500);
         VerRotate.setPosition(0.19);//rotate to chamber
 
         //GO TO THE CHAMBER 3
-        Thread sliderMiddle3 = new Thread(() -> verticalUp(-0.9, -1500);
+        Thread sliderMiddle3 = new Thread(() -> verticalUp(-1500, -0.9)) ;
         Thread driveFifth = new Thread(() -> {
-            driveDiagonal(1, 98.9);//Drive diagonal to the chamber
-            driveStraight(1, 11.6);//Drive straight
+            driveStraight(1, 7);
+            driveSide(-1, 115);
+            driveStraight(1, 45);
+            driveStraight(0.3, 7);
         });
 
         sliderMiddle3.start();
@@ -238,8 +250,8 @@ public class 3SpecimenAll extends LinearOpMode {
         VerClaw.setPosition(0.1);//to open
 
         //GO PARKING
-        driveDiagonal(-1, 106);//Drive diagonal to the observation
-        driveSide(-1, 20);//Drive sideways
+        driveDiagonal(1, 95);//Drive diagonal to the observation
+        driveSide(1, 60);//Drive sideways
 
 
 
@@ -426,6 +438,11 @@ public class 3SpecimenAll extends LinearOpMode {
         Vertical.setTargetPosition((int) position);
         Vertical.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         Vertical.setPower(power);
+
+        while (opModeIsActive() && Vertical.isBusy()) {
+            telemetry.addData("Current Position", Vertical.getCurrentPosition());
+            telemetry.update();
+        }
     }
     //___________________________VerticalPosition*____________________________//
 
@@ -435,6 +452,8 @@ public class 3SpecimenAll extends LinearOpMode {
         while (opModeIsActive() && !touchVertical.isPressed()) {
             Vertical.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             Vertical.setPower(power);  // Keep moving down
+            telemetry.addData("Vertical Motor", "Moving Down");
+            telemetry.update();
         }
 
         // Stop the vertical motor once the sensor is pressed
