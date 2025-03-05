@@ -1,0 +1,408 @@
+package org.firstinspires.ftc.teamcode.TELEOP;
+
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.TouchSensor;
+
+@TeleOp(name="TeleOp + Auto", group="Robot")
+public class TeleOpAuto extends LinearOpMode {
+    private DcMotor LeftFront = null;
+    private DcMotor LeftBack = null;
+    private DcMotor RightFront = null;
+    private DcMotor RightBack = null;
+
+    private DcMotor Horizontal = null;
+    private DcMotor Vertical = null;
+
+    private Servo VerClaw;
+    private Servo VerRotate;
+    private Servo HorClaw;
+    private Servo HorRotate;
+
+
+    boolean aBefore = false;
+    boolean bBefore = false;
+    boolean xBefore = false;
+    boolean yBefore = false;
+    boolean b1Before = false;
+    boolean lbBefore = false; //changing speed
+    boolean rbBefore = false;//changing direction
+    double x = 0.7;
+    double speed = 0.7;
+    TouchSensor touchSensor;
+
+
+    @Override
+    public void runOpMode() {
+        touchSensor = hardwareMap.get(TouchSensor.class, "sensor_touch");
+
+        LeftFront = hardwareMap.get(DcMotor.class, "left_front");
+        LeftBack = hardwareMap.get(DcMotor.class, "left_back");
+        RightFront = hardwareMap.get(DcMotor.class, "right_front");
+        RightBack = hardwareMap.get(DcMotor.class, "right_back");
+
+        Horizontal = hardwareMap.get(DcMotor.class, "Horizontal");
+        Vertical = hardwareMap.get(DcMotor.class, "Vertical");
+
+        VerClaw = hardwareMap.get(Servo.class, "Vertical Claw");
+        VerClaw.setPosition(0.72);
+
+        VerRotate = hardwareMap.get(Servo.class, "Vertical Rotate");
+        VerRotate.setPosition(0.17);
+
+        HorClaw = hardwareMap.get(Servo.class, "Horizontal Claw");
+        HorClaw.setPosition(0.52);
+
+        HorRotate = hardwareMap.get(Servo.class, "Horizontal Rotate");
+        HorRotate.setPosition(0.4);
+
+
+        LeftFront.setDirection(DcMotor.Direction.REVERSE);
+        LeftBack.setDirection(DcMotor.Direction.REVERSE);
+        RightFront.setDirection(DcMotor.Direction.FORWARD);
+        RightBack.setDirection(DcMotor.Direction.FORWARD);
+
+        Horizontal.setDirection(DcMotor.Direction.FORWARD);
+        Vertical.setDirection(DcMotor.Direction.FORWARD);
+
+        double forward;
+        double rotate;
+        double side;
+
+        double horizontal;
+        double vertical;
+
+        waitForStart();
+
+        while (opModeIsActive())   {
+
+            forward = gamepad1.left_stick_y;
+            rotate = gamepad1.right_stick_x;
+            side = -gamepad1.left_stick_x;
+
+            horizontal = gamepad2.right_stick_y;
+            vertical = gamepad2.left_stick_y;
+
+
+            LeftFront.setPower((forward + rotate + side)*speed);
+            LeftBack.setPower((forward + rotate - side)*speed);
+            RightFront.setPower((forward - rotate - side)*speed);
+            RightBack.setPower((forward - rotate + side)*speed);
+
+            Horizontal.setPower(horizontal * x);
+
+            if(gamepad1.right_bumper && !rbBefore){//change direction of the robot
+                rbBefore = true;
+                speed = -speed;
+            }
+            rbBefore = gamepad1.right_bumper;
+
+            if(gamepad1.left_bumper && !lbBefore){//change speed of the robot
+                lbBefore = true;
+                if (speed == 0.3){
+                    speed = 0.7;
+                }
+                else{
+                    speed = 0.3;
+                }
+            }
+            lbBefore = gamepad1.left_bumper;
+
+
+            if (gamepad1.b && !b1Before){
+                if (x == 0.3){
+                    x = 0.7;
+                }
+                else{
+                    x = 0.3;
+                }
+            }
+            b1Before = gamepad1.b;
+
+            /*if(!gamepad2.dpad_down && !gamepad2.dpad_up && !gamepad2.dpad_right && !gamepad2.dpad_left){
+
+                Vertical.setPower(vertical * 0.5);
+            }*/
+
+            if(gamepad2.dpad_right) {//middle of chambers
+                Vertical.setTargetPosition(-1600);
+                Vertical.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                Vertical.setPower(-0.6);
+            }
+
+
+            if(gamepad2.dpad_up) {//high chamber
+                Vertical.setTargetPosition(-2600);
+                Vertical.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                Vertical.setPower(-0.6);
+            }
+
+
+            if(gamepad2.dpad_left) {//high basket
+                Vertical.setTargetPosition(-4100);
+                Vertical.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                Vertical.setPower(-0.6);
+            }
+
+            if(gamepad2.dpad_down) {//low basket
+                Vertical.setTargetPosition(-1000);
+                Vertical.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                Vertical.setPower(-0.6);
+
+            }
+
+
+            if(gamepad2.left_bumper){
+                while (opModeIsActive() && !touchSensor.isPressed()) {
+                    Vertical.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+                    Vertical.setPower(0.6);  // Keep moving down
+                }
+                Vertical.setPower(0);
+                Vertical.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            }
+            telemetry.addData("Vertical Motor Position", Vertical.getCurrentPosition());
+            telemetry.update();
+            if(gamepad2.right_bumper) {
+                VerClaw.setPosition(0.72);//open
+                sleep(400);
+                VerClaw.setPosition(1);//close
+                sleep(400);
+                VerRotate.setPosition(0.81);//rotate
+                sleep(600);
+                VerClaw.setPosition(0.72);
+                /*while (opModeIsActive() && !touchSensor.isPressed()) {
+                    Vertical.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+                    Vertical.setPower(0.6);  // Keep moving down
+                }
+                Vertical.setPower(0);
+                Vertical.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);*/
+                Thread sliderZero1 = new Thread(() -> verticalZero(0.9));
+                Thread driveFirst = new Thread(() -> {
+                    driveStraight(-1, 50);
+                    driveSide(1, 100);
+                });
+
+                sliderZero1.start();
+                driveFirst.start();
+
+                try {
+                    sliderZero1.join();
+                    driveFirst.join();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+            }
+
+            if(gamepad2.y && !yBefore){
+                yBefore = true;
+                if(VerClaw.getPosition() == 0.94) {
+                    VerClaw.setPosition(0.72);
+                }
+                else{
+                    VerClaw.setPosition(0.94);
+                }
+
+            }
+            yBefore = gamepad2.y;
+
+            if(gamepad2.a && !aBefore){
+                aBefore = true;
+                if(VerRotate.getPosition() == 0.19) {
+                    VerRotate.setPosition(0.81);
+                }
+                else{
+                    VerRotate.setPosition(0.19);
+                }
+
+            }
+            aBefore = gamepad2.a;
+
+            if(gamepad2.x && !xBefore){
+                xBefore = true;
+                if(HorClaw.getPosition() == 0.27) {
+                    HorClaw.setPosition(0.52);
+                }
+                else{
+                    HorClaw.setPosition(0.27);
+                }
+            }
+            xBefore = gamepad2.x;
+
+
+            if(gamepad2.b && !bBefore){
+                bBefore = true;
+                if(HorRotate.getPosition() == 0.55) {
+                    HorRotate.setPosition(0.97);
+                }
+                else{
+                    HorRotate.setPosition(0.55);
+                }
+
+            }
+            bBefore = gamepad2.b;
+
+
+        }
+
+    }
+    //______________________________*Straight_________________________________//
+    public void driveStraight(double driveSpeed, double distance) {
+        LeftFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        LeftBack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        RightFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        RightBack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+        LeftFront.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        LeftBack.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        RightFront.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        RightBack.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        int targetTicks = (int) (PULSES_PER_CM * distance);
+
+        // Делим путь на три части: разгон (30%), равномерное движение (40%), замедление (30%)
+        double accelEnd = targetTicks * 0.3;
+        double cruiseEnd = targetTicks * 0.7;
+        double slowdownStart = targetTicks * 0.7;
+
+        while (opModeIsActive() && Math.abs(LeftFront.getCurrentPosition()) < targetTicks) {
+            int currentTicks = Math.abs(LeftFront.getCurrentPosition());
+            double speedFactor = 1.0;
+
+            // Разгон до 30% пути
+            if (currentTicks < accelEnd) {
+                speedFactor = currentTicks / accelEnd;
+            }
+            // Равномерное движение с 30% до 70%
+            else if (currentTicks < cruiseEnd) {
+                speedFactor = 1.0;
+            }
+            // Замедление после 70% пути
+            else if (currentTicks >= slowdownStart) {
+                speedFactor = Math.max(0.2, 1.0 - ((currentTicks - slowdownStart) / (targetTicks - slowdownStart)));
+            }
+
+            double adjustedSpeed = driveSpeed * speedFactor;
+
+            telemetry.addData("Position", "%5d / %5d", currentTicks, targetTicks);
+            telemetry.addData("Speed Factor", "%.2f", speedFactor);
+            telemetry.update();
+
+            LeftFront.setPower(adjustedSpeed);
+            LeftBack.setPower(adjustedSpeed);
+            RightFront.setPower(adjustedSpeed);
+            RightBack.setPower(adjustedSpeed);
+        }
+
+        LeftFront.setPower(0.05);
+        LeftBack.setPower(0.05);
+        RightFront.setPower(0.05);
+        RightBack.setPower(0.05);
+
+        sleep(200);
+
+        LeftFront.setPower(0);
+        LeftBack.setPower(0);
+        RightFront.setPower(0);
+        RightBack.setPower(0);
+    }
+
+
+    //______________________________Straight*_________________________________//
+
+
+    //______________________________*Side_____________________________________//
+
+    public void driveSide(double driveSpeed, double distance) {
+        LeftFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        LeftBack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        RightFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        RightBack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+        LeftFront.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        LeftBack.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        RightFront.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        RightBack.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        int targetTicks = (int) (PULSES_PER_CM * distance);
+
+        // Делим путь на три части: разгон (30%), равномерное движение (40%), замедление (30%)
+        double accelEnd = targetTicks * 0.3;
+        double cruiseEnd = targetTicks * 0.7;
+        double slowdownStart = targetTicks * 0.7;
+
+        while (opModeIsActive() && Math.abs(LeftFront.getCurrentPosition()) < targetTicks) {
+            int currentTicks = Math.abs(LeftFront.getCurrentPosition());
+            double speedFactor = 1.0;
+
+            // Разгон до 30% пути
+            if (currentTicks < accelEnd) {
+                speedFactor = currentTicks / accelEnd;
+            }
+            // Равномерное движение с 30% до 70%
+            else if (currentTicks < cruiseEnd) {
+                speedFactor = 1.0;
+            }
+            // Замедление после 70% пути
+            else if (currentTicks >= slowdownStart) {
+                speedFactor = Math.max(0.2, 1.0 - ((currentTicks - slowdownStart) / (targetTicks - slowdownStart)));
+            }
+
+            double adjustedSpeed = driveSpeed * speedFactor;
+
+            telemetry.addData("Position", "%5d / %5d", currentTicks, targetTicks);
+            telemetry.addData("Speed Factor", "%.2f", speedFactor);
+            telemetry.update();
+
+            LeftFront.setPower(adjustedSpeed);
+            LeftBack.setPower(-adjustedSpeed);
+            RightFront.setPower(-adjustedSpeed);
+            RightBack.setPower(adjustedSpeed);
+        }
+
+        LeftFront.setPower(0.05);
+        LeftBack.setPower(0.05);
+        RightFront.setPower(0.05);
+        RightBack.setPower(0.05);
+
+        sleep(200);
+
+        LeftFront.setPower(0);
+        LeftBack.setPower(0);
+        RightFront.setPower(0);
+        RightBack.setPower(0);
+    }
+
+    //______________________________Side*_____________________________________//
+    //___________________________VerticalPosition*____________________________//
+    public void verticalUp(double position, double power){
+        Vertical.setTargetPosition((int) position);
+        Vertical.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        Vertical.setPower(power);
+
+        while (opModeIsActive() && Vertical.isBusy()) {
+            telemetry.addData("Current Position", Vertical.getCurrentPosition());
+            telemetry.update();
+        }
+    }
+    //___________________________VerticalPosition*____________________________//
+
+    //___________________________VerticalZero*________________________________//
+    public void verticalZero(double power){
+
+        while (opModeIsActive() && !touchVertical.isPressed()) {
+            Vertical.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            Vertical.setPower(power);  // Keep moving down
+            telemetry.addData("Vertical Motor", "Moving Down");
+            telemetry.update();
+        }
+
+        // Stop the vertical motor once the sensor is pressed
+        Vertical.setPower(0);
+        Vertical.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+    }
+    //___________________________VerticalZero*_______________________________//
+
+}
