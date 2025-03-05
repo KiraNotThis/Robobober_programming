@@ -482,6 +482,7 @@ public class Specimen3All extends LinearOpMode {
 
         // Stop the vertical motor once the sensor is pressed
         Vertical.setPower(0);
+        Vertical.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
     }
     //___________________________VerticalZero*_______________________________//
 
