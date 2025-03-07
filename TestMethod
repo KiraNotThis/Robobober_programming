@@ -6,21 +6,22 @@ import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.IMU;
+
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 
-@Autonomous(name="Test Method", group="Robot")
-public class TestMethod extends LinearOpMode {
+@Autonomous(name="TestMethods", group="Robot")
+public class TestMethods extends LinearOpMode {
     private DcMotor LeftFront = null;
     private DcMotor LeftBack = null;
     private DcMotor RightFront = null;
     private DcMotor RightBack = null;
     private DcMotor Vertical = null;
     private DcMotor Horizontal = null;
-    private IMU imu = null;
+    private IMU imu;
 
 
     private Servo VerRotate;
@@ -34,11 +35,23 @@ public class TestMethod extends LinearOpMode {
     TouchSensor touchVertical;
     TouchSensor touchHorizontal;
 
-
-
-
     @Override
     public void runOpMode() {
+        imu = hardwareMap.get(IMU.class, "imu");
+
+        //Define orientation of a robot
+        RevHubOrientationOnRobot.LogoFacingDirection logoDirection = RevHubOrientationOnRobot.LogoFacingDirection.LEFT;
+        RevHubOrientationOnRobot.UsbFacingDirection usbDirection = RevHubOrientationOnRobot.UsbFacingDirection.UP;
+
+        RevHubOrientationOnRobot orientationOnRobot = new RevHubOrientationOnRobot(logoDirection, usbDirection);
+
+        // IMU settings
+        IMU.Parameters parameters = new IMU.Parameters(orientationOnRobot);
+        imu.initialize(parameters);
+
+        // Reset angle before starting
+        imu.resetYaw();
+
         touchVertical = hardwareMap.get(TouchSensor.class, "sensor_touch");//in configuration change the name
         touchHorizontal = hardwareMap.get(TouchSensor.class, "sensor_touch_hor");
 
@@ -53,23 +66,12 @@ public class TestMethod extends LinearOpMode {
         VerRotate = hardwareMap.get(Servo.class, "Vertical Rotate");
         VerRotate.setPosition(0.19);
         VerClaw = hardwareMap.get(Servo.class, "Vertical Claw");
-        VerClaw.setPosition(0.32);
+        VerClaw.setPosition(0.94);
 
         HorRotate = hardwareMap.get(Servo.class, "Horizontal Rotate");
         HorRotate.setPosition(0.4);
         HorClaw = hardwareMap.get(Servo.class, "Horizontal Claw");
         HorClaw.setPosition(0.05);
-        RevHubOrientationOnRobot.LogoFacingDirection logoDirection =
-                RevHubOrientationOnRobot.LogoFacingDirection.RIGHT;
-
-        RevHubOrientationOnRobot.UsbFacingDirection usbDirection =
-                RevHubOrientationOnRobot.UsbFacingDirection.UP;
-
-        RevHubOrientationOnRobot orientationOnRobot = new
-                RevHubOrientationOnRobot(logoDirection, usbDirection);
-
-        imu = hardwareMap.get(IMU.class, "imu");
-        imu.initialize(new IMU.Parameters(orientationOnRobot));
 
         LeftFront.setDirection(DcMotor.Direction.FORWARD);
         LeftBack.setDirection(DcMotor.Direction.FORWARD);
@@ -95,26 +97,26 @@ public class TestMethod extends LinearOpMode {
         Vertical.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         Horizontal.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
-        imu.resetYaw();
-
         while (opModeInInit()) {
-
             telemetry.addData("Currently at:", "%4.0f", getHeading());
             telemetry.update();
-
         }
 
         waitForStart();
-        driveStraight(1, 60);
-        driveSide(1, 60);
+        double contstant_angle = getHeading();//the first ideal zero of robot
+
+        driveStraight(0.8, 60, contstant_angle, 500, 0.5, 0.05);//Drive back
+        driveSide(0.8, 60, contstant_angle, 500, 0.5, 0.05);
+
+        sleep(3000);
+
+        driveStraight(-0.3, 20, contstant_angle, 0, 1, 0.05);//Drive back
+        driveSide(-0.3, 20, contstant_angle, 0, 1, 0.05);
 
     }
     public void driveRotate(double rotateSpeed, double angle)
     {
-        imu.resetYaw();
-
         while (opModeIsActive() && Math.abs(getHeading()) < angle) {
-
             telemetry.addData("Currently at:", "%4.0f", getHeading());
             telemetry.update();
 
@@ -131,60 +133,75 @@ public class TestMethod extends LinearOpMode {
     }
 
     //______________________________*Straight_________________________________//
-    public void driveStraight(double driveSpeed, double distance) {
+    /**
+     * Moves the robot forward while maintaining direction using IMU.
+     * Supports acceleration, deceleration, and configurable IMU correction.
+     *
+     * @param driveSpeed The maximum driving speed (0.0 - 1.0).
+     * @param distance The target distance to travel in centimeters.
+     * @param startAngle The initial IMU heading to maintain.
+     * @param rampUpTime Time in milliseconds for acceleration (0 disables acceleration).
+     * @param slowdownStartFactor The fraction of the total distance where deceleration starts (1.0 disables deceleration).
+     * @param kP The proportional correction factor for IMU drift.
+     */
+    public void driveStraight(double driveSpeed, double distance, double startAngle, double rampUpTime, double slowdownStartFactor, double kP) {
+        // Reset encoders before starting movement
         LeftFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         LeftBack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         RightFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         RightBack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
+        // Set motors to run using encoders
         LeftFront.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         LeftBack.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         RightFront.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         RightBack.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         int targetTicks = (int) (PULSES_PER_CM * distance);
-
-        // Делим путь на три части: разгон (30%), равномерное движение (40%), замедление (30%)
-        double accelEnd = targetTicks * 0.3;
-        double cruiseEnd = targetTicks * 0.7;
-        double slowdownStart = targetTicks * 0.7;
+        double slowdownStart = targetTicks * slowdownStartFactor; // Point where deceleration begins
+        long startTime = System.currentTimeMillis();
 
         while (opModeIsActive() && Math.abs(LeftFront.getCurrentPosition()) < targetTicks) {
             int currentTicks = Math.abs(LeftFront.getCurrentPosition());
+            double currentAngle = getHeading();
+            double angleError = startAngle - currentAngle;
+
+            // Acceleration logic
             double speedFactor = 1.0;
-
-            // Разгон до 30% пути
-            if (currentTicks < accelEnd) {
-                speedFactor = currentTicks / accelEnd;
-            }
-            // Равномерное движение с 30% до 70%
-            else if (currentTicks < cruiseEnd) {
-                speedFactor = 1.0;
-            }
-            // Замедление после 70% пути
-            else if (currentTicks >= slowdownStart) {
-                speedFactor = Math.max(0.2, 1.0 - ((currentTicks - slowdownStart) / (targetTicks - slowdownStart)));
+            if (rampUpTime > 0) {
+                long elapsedTime = System.currentTimeMillis() - startTime;
+                speedFactor = Math.min(1.0, elapsedTime / rampUpTime);
             }
 
-            double adjustedSpeed = driveSpeed * speedFactor;
+            // Deceleration logic
+            double slowdownFactor = 1.0;
+            if (slowdownStartFactor < 1.0 && currentTicks > slowdownStart) {
+                slowdownFactor = Math.max(0.2, 1.0 - ((currentTicks - slowdownStart) / (targetTicks - slowdownStart)));
+            }
 
-            telemetry.addData("Position", "%5d / %5d", currentTicks, targetTicks);
-            telemetry.addData("Speed Factor", "%.2f", speedFactor);
+            double adjustedSpeed = driveSpeed * slowdownFactor * speedFactor;
+            double correction = angleError * kP;  // Use kP for IMU correction
+
+            telemetry.addData("Straight Movement", "Target: %5d, Current: %5d", targetTicks, currentTicks);
+            telemetry.addData("IMU Angle", "%.2f", currentAngle);
+            telemetry.addData("Correction", "%.2f", correction);
             telemetry.update();
 
-            LeftFront.setPower(adjustedSpeed);
-            LeftBack.setPower(adjustedSpeed);
-            RightFront.setPower(adjustedSpeed);
-            RightBack.setPower(adjustedSpeed);
+            // Apply correction for maintaining a straight path
+            LeftFront.setPower(adjustedSpeed + correction);
+            LeftBack.setPower(adjustedSpeed + correction);
+            RightFront.setPower(adjustedSpeed - correction);
+            RightBack.setPower(adjustedSpeed - correction);
         }
 
+        // Allow "coasting" before full stop
         LeftFront.setPower(0.05);
         LeftBack.setPower(0.05);
         RightFront.setPower(0.05);
         RightBack.setPower(0.05);
-
         sleep(200);
 
+        // Full stop
         LeftFront.setPower(0);
         LeftBack.setPower(0);
         RightFront.setPower(0);
@@ -197,7 +214,7 @@ public class TestMethod extends LinearOpMode {
 
     //______________________________*Side_____________________________________//
 
-    public void driveSide(double driveSpeed, double distance) {
+    public void driveSide(double driveSpeed, double distance, double startAngle, double rampUpTime, double slowdownStartFactor, double kP) {
         LeftFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         LeftBack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         RightFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -208,47 +225,58 @@ public class TestMethod extends LinearOpMode {
         RightFront.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         RightBack.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
-        int targetTicks = (int) (PULSES_PER_CM * distance);
+        int targetTicks = (int) (PULSES_PER_CM * distance);//result distance
+        double slowdownStart = targetTicks * slowdownStartFactor;//strating point of slowdown
+        //double rampUpTime = 500;//
+        long startTime = System.currentTimeMillis();
 
-        // Делим путь на три части: разгон (30%), равномерное движение (40%), замедление (30%)
-        double accelEnd = targetTicks * 0.3;
-        double cruiseEnd = targetTicks * 0.7;
-        double slowdownStart = targetTicks * 0.7;
+        //double startAngle = getHeading();  // Запоминаем стартовый угол
 
         while (opModeIsActive() && Math.abs(LeftFront.getCurrentPosition()) < targetTicks) {
             int currentTicks = Math.abs(LeftFront.getCurrentPosition());
+            double currentAngle = getHeading();
+            double angleError = startAngle - currentAngle;  // Насколько робот отклонился
+
+            long elapsedTime = System.currentTimeMillis() - startTime;
             double speedFactor = 1.0;
-
-            // Разгон до 30% пути
-            if (currentTicks < accelEnd) {
-                speedFactor = currentTicks / accelEnd;
-            }
-            // Равномерное движение с 30% до 70%
-            else if (currentTicks < cruiseEnd) {
-                speedFactor = 1.0;
-            }
-            // Замедление после 70% пути
-            else if (currentTicks >= slowdownStart) {
-                speedFactor = Math.max(0.2, 1.0 - ((currentTicks - slowdownStart) / (targetTicks - slowdownStart)));
+            if (elapsedTime < rampUpTime) {
+                speedFactor = (double) elapsedTime / rampUpTime;
             }
 
-            double adjustedSpeed = driveSpeed * speedFactor;
+            double slowdownFactor = 1.0;
+            if (currentTicks > slowdownStart) {
+                slowdownFactor = Math.max(0.2, 1.0 - ((currentTicks - slowdownStart) / (targetTicks - slowdownStart)));
+            }
 
-            telemetry.addData("Position", "%5d / %5d", currentTicks, targetTicks);
-            telemetry.addData("Speed Factor", "%.2f", speedFactor);
+            double adjustedSpeed = driveSpeed * slowdownFactor * speedFactor;
+            double correction = angleError * kP;  // Use kP for IMU correction
+
+            telemetry.addData("Straight Movement", "Target: %5d, Current: %5d", targetTicks, currentTicks);
+            telemetry.addData("IMU Angle", "%.2f", currentAngle);
+            telemetry.addData("Correction", "%.2f", correction);
             telemetry.update();
 
-            LeftFront.setPower(adjustedSpeed);
-            LeftBack.setPower(-adjustedSpeed);
-            RightFront.setPower(-adjustedSpeed);
-            RightBack.setPower(adjustedSpeed);
+            // Apply correction for maintaining a straight path
+            LeftFront.setPower(adjustedSpeed + correction);
+            LeftBack.setPower(-adjustedSpeed + correction);
+            RightFront.setPower(-adjustedSpeed - correction);
+            RightBack.setPower(adjustedSpeed - correction);
+
+            /*telemetry.addData("Angle", "%.2f", currentAngle);
+            telemetry.addData("Correction", "%.2f", angleError);
+            telemetry.update();
+
+            // Коррекция направления на основе угла
+            LeftFront.setPower(adjustedSpeed + angleError * 0.05);
+            LeftBack.setPower(-adjustedSpeed + angleError * 0.05);
+            RightFront.setPower(-adjustedSpeed - angleError * 0.05);
+            RightBack.setPower(adjustedSpeed - angleError * 0.05);*/
         }
 
         LeftFront.setPower(0.05);
         LeftBack.setPower(0.05);
         RightFront.setPower(0.05);
         RightBack.setPower(0.05);
-
         sleep(200);
 
         LeftFront.setPower(0);
@@ -256,7 +284,6 @@ public class TestMethod extends LinearOpMode {
         RightFront.setPower(0);
         RightBack.setPower(0);
     }
-
     //______________________________Side*_____________________________________//
 
 
@@ -334,6 +361,7 @@ public class TestMethod extends LinearOpMode {
 
         // Stop the vertical motor once the sensor is pressed
         Vertical.setPower(0);
+        Vertical.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
     }
     //___________________________VerticalZero*_______________________________//
 
@@ -342,6 +370,12 @@ public class TestMethod extends LinearOpMode {
         Horizontal.setTargetPosition((int) position);
         Horizontal.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         Horizontal.setPower(power);
+
+        while (opModeIsActive() && Horizontal.isBusy()) {
+            telemetry.addData("Current Position", Horizontal.getCurrentPosition());
+            telemetry.update();
+        }
+        Horizontal.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
     }
     //___________________________HorizontalPosition*____________________________//
 
