@@ -6,6 +6,7 @@ import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.IMU;
+
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 
@@ -20,7 +21,7 @@ public class Specimen3All extends LinearOpMode {
     private DcMotor RightBack = null;
     private DcMotor Vertical = null;
     private DcMotor Horizontal = null;
-    private IMU imu = null;
+    private IMU imu;
 
 
     private Servo VerRotate;
@@ -34,11 +35,23 @@ public class Specimen3All extends LinearOpMode {
     TouchSensor touchVertical;
     TouchSensor touchHorizontal;
 
-
-
-
     @Override
     public void runOpMode() {
+        imu = hardwareMap.get(IMU.class, "imu");
+
+        //Define orientation of a robot
+        RevHubOrientationOnRobot.LogoFacingDirection logoDirection = RevHubOrientationOnRobot.LogoFacingDirection.LEFT;
+        RevHubOrientationOnRobot.UsbFacingDirection usbDirection = RevHubOrientationOnRobot.UsbFacingDirection.UP;
+
+        RevHubOrientationOnRobot orientationOnRobot = new RevHubOrientationOnRobot(logoDirection, usbDirection);
+
+        // IMU settings
+        IMU.Parameters parameters = new IMU.Parameters(orientationOnRobot);
+        imu.initialize(parameters);
+
+        // Resrt angle before starting
+        imu.resetYaw();
+
         touchVertical = hardwareMap.get(TouchSensor.class, "sensor_touch");//in configuration change the name
         touchHorizontal = hardwareMap.get(TouchSensor.class, "sensor_touch_hor");
 
@@ -53,23 +66,12 @@ public class Specimen3All extends LinearOpMode {
         VerRotate = hardwareMap.get(Servo.class, "Vertical Rotate");
         VerRotate.setPosition(0.19);
         VerClaw = hardwareMap.get(Servo.class, "Vertical Claw");
-        VerClaw.setPosition(0.32);
+        VerClaw.setPosition(0.94);
 
         HorRotate = hardwareMap.get(Servo.class, "Horizontal Rotate");
         HorRotate.setPosition(0.4);
         HorClaw = hardwareMap.get(Servo.class, "Horizontal Claw");
         HorClaw.setPosition(0.05);
-        RevHubOrientationOnRobot.LogoFacingDirection logoDirection =
-                RevHubOrientationOnRobot.LogoFacingDirection.RIGHT;
-
-        RevHubOrientationOnRobot.UsbFacingDirection usbDirection =
-                RevHubOrientationOnRobot.UsbFacingDirection.UP;
-
-        RevHubOrientationOnRobot orientationOnRobot = new
-                RevHubOrientationOnRobot(logoDirection, usbDirection);
-
-        imu = hardwareMap.get(IMU.class, "imu");
-        imu.initialize(new IMU.Parameters(orientationOnRobot));
 
         LeftFront.setDirection(DcMotor.Direction.FORWARD);
         LeftBack.setDirection(DcMotor.Direction.FORWARD);
@@ -95,13 +97,9 @@ public class Specimen3All extends LinearOpMode {
         Vertical.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         Horizontal.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
-        imu.resetYaw();
-
         while (opModeInInit()) {
-
             telemetry.addData("Currently at:", "%4.0f", getHeading());
             telemetry.update();
-
         }
 
         waitForStart();
@@ -109,8 +107,7 @@ public class Specimen3All extends LinearOpMode {
         //GO TO THE CHAMBER 1
         Thread sliderMiddle1 = new Thread(() -> verticalUp(-1500, -0.9));
         Thread driveFirst = new Thread(() -> {
-            driveStraight(1, 63);//Drive back
-            driveStraight(0.3, 5);
+            driveStraight(1, 65);//Drive to the chamber
         });
 
         sliderMiddle1.start();
@@ -123,17 +120,16 @@ public class Specimen3All extends LinearOpMode {
             e.printStackTrace();
         }
 
-
         //PLACE 1st SPECIMEN
         verticalUp(-2600, -0.9);//place specimen 1
-        VerClaw.setPosition(0.1);//to open
+        VerClaw.setPosition(0.72);//to open
 
         //GO FOR THE SAMPLE
         Thread sliderZero1 = new Thread(() -> verticalZero(0.9));
         Thread driveSecond = new Thread(() -> {
             driveStraight(-0.3, 20);//Drive back
             sleep(50);
-            driveSide(1, 120);
+            driveSide(0.8, 154);
         });
 
         sliderZero1.start();
@@ -148,39 +144,37 @@ public class Specimen3All extends LinearOpMode {
 
         //TAKE SAMPLE AND PUT IN OBSERVATION
         HorRotate.setPosition(1);//rotate to the sample
-        //HorClaw.setPosition(0);//open horizontal claw
-        //horizontalForward(-0.9, -500);//put slider to the sample
-        sleep(500);
-        HorClaw.setPosition(0.23);//close claw
+        horizontalForward(-800, -0.5);//move the specimen a little bit
+        horizontalForward(60, 0.5);//move backwards to take the specimen
+
+        HorClaw.setPosition(0.52);//close claw
         sleep(500);
         HorRotate.setPosition(0.55);//rotate to vertical claw
-        //horizontalZero(-0.9);//put slider in zero position
+        horizontalForward(740, 0.5);//close horizontal slider
+        VerClaw.setPosition(0.94);// close VerClaw
         sleep(500);
-        VerClaw.setPosition(0.32);// close VerClaw
+        HorClaw.setPosition(0.27);//open horizontal claw
         sleep(500);
-        HorClaw.setPosition(0);//open horizontal claw
-        sleep(500);
-        VerRotate.setPosition(0.81);//rotate to observation
-        sleep(500);
-        VerClaw.setPosition(0.1);//open claw
+        VerRotate.setPosition(0.81);//rotate to put in the observation zone
+        sleep(200);
+        VerClaw.setPosition(0.72);//to open
 
         //GO TO OBSERVATION
-        driveSide(-1, 20);//Drive sideways
-        driveStraight(-1, 50);//Drive backwards
-        driveStraight(-0.23, 17);//Drive backwards for the sample.
+        driveStraight(-0.8, 30);//Drive backwards
+        driveSide(-0.3, 43);//Drive sideways
+        driveStraight(-0.27, 23);//Drive backwards for the sample.
 
         //TAKE SPECIMEN FROM OBSERVATION 1st
-        VerClaw.setPosition(0.32);// close VerClaw
+        VerClaw.setPosition(0.94);// close VerClaw
         sleep(500);
         VerRotate.setPosition(0.19);//rotate to chamber
 
         //GO TO THE CHAMBER 2
         Thread sliderMiddle2 = new Thread(() -> verticalUp(-1500, -0.9));
         Thread driveThird = new Thread(() -> {
-            driveStraight(1, 7);
-            driveSide(-1, 110);
-            driveStraight(1, 47);
-            driveStraight(0.3, 7);
+            driveStraight(0.8, 7);
+            driveSide(-0.8, 95);
+            driveStraight(0.8, 47);
         });
 
         sliderMiddle2.start();
@@ -195,20 +189,20 @@ public class Specimen3All extends LinearOpMode {
 
         //PLACE 2nd SPECIMEN
         verticalUp(-2600, -0.9);//place specimen 1
-        VerClaw.setPosition(0.1);//to open
+        VerClaw.setPosition(0.72);//to open
         sleep(500);
-        VerClaw.setPosition(0.32);//to close
+        VerClaw.setPosition(0.94);//to close
         sleep(500);
         VerRotate.setPosition(0.81);//rotate for observation
         sleep(500);
-        VerClaw.setPosition(0.1);//to open
+        VerClaw.setPosition(0.72);//to open
 
         //GO TO OBSERVATION 2nd
         Thread sliderZero2 = new Thread(() -> verticalZero(0.9));
         Thread driveFourth = new Thread(() -> {
-            driveStraight(-1, 50);
-            driveSide(1, 100);
-            driveStraight(-0.3, 25);
+            driveStraight(-0.8, 50);
+            driveSide(0.8, 100);
+            driveStraight(-0.3, 20);
         });
 
         sliderZero2.start();
@@ -222,17 +216,16 @@ public class Specimen3All extends LinearOpMode {
         }
 
         //TAKE SPECIMEN FROM OBSERVATION 3rd
-        VerClaw.setPosition(0.32);// close VerClaw
+        VerClaw.setPosition(0.94);// close VerClaw
         sleep(500);
         VerRotate.setPosition(0.19);//rotate to chamber
 
         //GO TO THE CHAMBER 3
         Thread sliderMiddle3 = new Thread(() -> verticalUp(-1500, -0.9)) ;
         Thread driveFifth = new Thread(() -> {
-            driveStraight(1, 7);
-            driveSide(-1, 115);
-            driveStraight(1, 45);
-            driveStraight(0.3, 7);
+            driveStraight(0.8, 7);
+            driveSide(-0.8, 87);
+            driveStraight(0.8, 52);
         });
 
         sliderMiddle3.start();
@@ -247,22 +240,16 @@ public class Specimen3All extends LinearOpMode {
 
         //PLACE 3rd SPECIMEN
         verticalUp(-2600, -0.9);//place specimen 1
-        VerClaw.setPosition(0.1);//to open
+        VerClaw.setPosition(0.72);//to open
 
         //GO PARKING
         driveDiagonal(1, 95);//Drive diagonal to the observation
-        driveSide(1, 60);//Drive sideways
-
-
-
+        driveSide(1, 80);//Drive sideways
 
     }
     public void driveRotate(double rotateSpeed, double angle)
     {
-        imu.resetYaw();
-
         while (opModeIsActive() && Math.abs(getHeading()) < angle) {
-
             telemetry.addData("Currently at:", "%4.0f", getHeading());
             telemetry.update();
 
@@ -279,7 +266,6 @@ public class Specimen3All extends LinearOpMode {
     }
 
     //______________________________*Straight_________________________________//
-
     public void driveStraight(double driveSpeed, double distance) {
         LeftFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         LeftBack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -292,36 +278,45 @@ public class Specimen3All extends LinearOpMode {
         RightBack.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         int targetTicks = (int) (PULSES_PER_CM * distance);
+        double slowdownStart = targetTicks * 0.5;
+        double rampUpTime = 500;
+        long startTime = System.currentTimeMillis();
 
-        // Starting to slow down 70% of the way
-        double slowdownStart = targetTicks * 0.7;
+        double startAngle = getHeading();  // Запоминаем стартовый угол
 
         while (opModeIsActive() && Math.abs(LeftFront.getCurrentPosition()) < targetTicks) {
             int currentTicks = Math.abs(LeftFront.getCurrentPosition());
-            double slowdownFactor = 1.0;
+            double currentAngle = getHeading();
+            double angleError = startAngle - currentAngle;  // Насколько робот отклонился
 
-            // Smooth braking if the robot travels 70% of the distance
+            long elapsedTime = System.currentTimeMillis() - startTime;
+            double speedFactor = 1.0;
+            if (elapsedTime < rampUpTime) {
+                speedFactor = (double) elapsedTime / rampUpTime;
+            }
+
+            double slowdownFactor = 1.0;
             if (currentTicks > slowdownStart) {
                 slowdownFactor = Math.max(0.2, 1.0 - ((currentTicks - slowdownStart) / (targetTicks - slowdownStart)));
             }
 
-            double adjustedSpeed = driveSpeed * slowdownFactor;
+            double adjustedSpeed = driveSpeed * slowdownFactor * speedFactor;
 
-            telemetry.addData("Position", "%5d / %5d", currentTicks, targetTicks);
-            telemetry.addData("Speed Factor", "%.2f", slowdownFactor);
+            telemetry.addData("Angle", "%.2f", currentAngle);
+            telemetry.addData("Correction", "%.2f", angleError);
             telemetry.update();
 
-            LeftFront.setPower(adjustedSpeed);
-            LeftBack.setPower(adjustedSpeed);
-            RightFront.setPower(adjustedSpeed);
-            RightBack.setPower(adjustedSpeed);
+            // Коррекция направления на основе угла
+            LeftFront.setPower(adjustedSpeed + angleError * 0.05);
+            LeftBack.setPower(adjustedSpeed + angleError * 0.05);
+            RightFront.setPower(adjustedSpeed - angleError * 0.05);
+            RightBack.setPower(adjustedSpeed - angleError * 0.05);
         }
 
         LeftFront.setPower(0.05);
         LeftBack.setPower(0.05);
         RightFront.setPower(0.05);
         RightBack.setPower(0.05);
-
         sleep(200);
 
         LeftFront.setPower(0);
@@ -329,6 +324,7 @@ public class Specimen3All extends LinearOpMode {
         RightFront.setPower(0);
         RightBack.setPower(0);
     }
+
     //______________________________Straight*_________________________________//
 
 
@@ -345,35 +341,46 @@ public class Specimen3All extends LinearOpMode {
         RightFront.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         RightBack.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
-        int targetTicks = (int) (PULSES_PER_CM * distance);
+        int targetTicks = (int) (PULSES_PER_CM * distance);//result distance
+        double slowdownStart = targetTicks * 0.5;//strating point of slowdown
+        double rampUpTime = 500;//
+        long startTime = System.currentTimeMillis();
 
-        double slowdownStart = targetTicks * 0.7;
+        double startAngle = getHeading();  // Запоминаем стартовый угол
 
         while (opModeIsActive() && Math.abs(LeftFront.getCurrentPosition()) < targetTicks) {
             int currentTicks = Math.abs(LeftFront.getCurrentPosition());
-            double slowdownFactor = 1.0;
+            double currentAngle = getHeading();
+            double angleError = startAngle - currentAngle;  // Насколько робот отклонился
 
+            long elapsedTime = System.currentTimeMillis() - startTime;
+            double speedFactor = 1.0;
+            if (elapsedTime < rampUpTime) {
+                speedFactor = (double) elapsedTime / rampUpTime;
+            }
+
+            double slowdownFactor = 1.0;
             if (currentTicks > slowdownStart) {
                 slowdownFactor = Math.max(0.2, 1.0 - ((currentTicks - slowdownStart) / (targetTicks - slowdownStart)));
             }
 
-            double adjustedSpeed = driveSpeed * slowdownFactor;
+            double adjustedSpeed = driveSpeed * slowdownFactor * speedFactor;
 
-            telemetry.addData("Position", "%5d / %5d", currentTicks, targetTicks);
-            telemetry.addData("Speed Factor", "%.2f", slowdownFactor);
+            telemetry.addData("Angle", "%.2f", currentAngle);
+            telemetry.addData("Correction", "%.2f", angleError);
             telemetry.update();
 
-            LeftFront.setPower(adjustedSpeed);
-            LeftBack.setPower(-adjustedSpeed);
-            RightFront.setPower(-adjustedSpeed);
-            RightBack.setPower(adjustedSpeed);
+            // Коррекция направления на основе угла
+            LeftFront.setPower(adjustedSpeed + angleError * 0.05);
+            LeftBack.setPower(-adjustedSpeed + angleError * 0.05);
+            RightFront.setPower(-adjustedSpeed - angleError * 0.05);
+            RightBack.setPower(adjustedSpeed - angleError * 0.05);
         }
 
         LeftFront.setPower(0.05);
-        LeftBack.setPower(-0.05);
-        RightFront.setPower(-0.05);
+        LeftBack.setPower(0.05);
+        RightFront.setPower(0.05);
         RightBack.setPower(0.05);
-
         sleep(200);
 
         LeftFront.setPower(0);
@@ -458,6 +465,7 @@ public class Specimen3All extends LinearOpMode {
 
         // Stop the vertical motor once the sensor is pressed
         Vertical.setPower(0);
+        Vertical.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
     }
     //___________________________VerticalZero*_______________________________//
 
@@ -466,6 +474,12 @@ public class Specimen3All extends LinearOpMode {
         Horizontal.setTargetPosition((int) position);
         Horizontal.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         Horizontal.setPower(power);
+
+        while (opModeIsActive() && Horizontal.isBusy()) {
+            telemetry.addData("Current Position", Horizontal.getCurrentPosition());
+            telemetry.update();
+        }
+        Horizontal.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
     }
     //___________________________HorizontalPosition*____________________________//
 
